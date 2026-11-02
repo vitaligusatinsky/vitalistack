@@ -13,3 +13,5 @@ Newest at the bottom. Each one records what was decided and why.
 | 2026-11-02 | Open core (MIT) with premium add-ons that are copied in at development time | Keeps premium out of runtime dependencies and deploy builds. |
 | 2026-11-02 | Built in public, with a build log for every phase | The process is part of the product. |
 | 2026-11-02 | vitalistack.com is the project's home | Short, matches the name; the build-log site will live there on Cloudflare. |
+| 2026-11-02 | The project teaches first: own your stack and know the fundamentals of building with AI | Content and learning come before revenue. |
+| 2026-11-02 | Copyright holder is DesignAnswers Oy | The company that maintains and sells Vitali Stack. |
