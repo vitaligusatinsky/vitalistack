@@ -1,11 +1,11 @@
 // Fails if any tracked file contains a term from a private denylist.
-// The denylist lives outside this repo; point to it with VITALI_STACK_DENYLIST.
+// The denylist lives outside this repo; point to it with VITALISTACK_DENYLIST.
 import { readFileSync } from "node:fs";
 import { $ } from "bun";
 
-const listPath = process.env.VITALI_STACK_DENYLIST;
+const listPath = process.env.VITALISTACK_DENYLIST;
 if (!listPath) {
-  console.log("scrub-check: VITALI_STACK_DENYLIST not set, skipping (maintainers must set it before release)");
+  console.log("scrub-check: VITALISTACK_DENYLIST not set, skipping (maintainers must set it before release)");
   process.exit(0);
 }
 const terms = readFileSync(listPath, "utf8")
