@@ -1,0 +1,19 @@
+@import 'tailwindcss' source('../');
+@import './tokens.css';
+
+@layer base {
+  html {
+    color-scheme: light dark;
+  }
+
+  html,
+  body {
+    @apply bg-surface text-ink font-sans;
+  }
+
+  *,
+  ::after,
+  ::before {
+    border-color: var(--color-border);
+  }
+}
