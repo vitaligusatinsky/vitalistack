@@ -1,0 +1,17 @@
+name: Close outside pull requests
+on:
+  pull_request_target:
+    types: [opened, reopened]
+permissions:
+  pull-requests: write
+jobs:
+  close:
+    if: github.event.pull_request.user.login != github.repository_owner
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          gh pr close "$PR" --repo "$REPO" --comment "Thanks for the interest. Vitali Stack isn't taking outside pull requests yet (see CONTRIBUTING.md). Issues are welcome."
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
