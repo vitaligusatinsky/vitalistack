@@ -2,7 +2,7 @@
 
 An opinionated starter for building web apps with coding agents. It gives you a solid TanStack Start base plus the rules, gates and agent setup that keep Claude Code and Codex consistent from the first commit.
 
-**Status:** pre-alpha, built in public. Nothing here is ready to use yet. The [build log](build-log/) shows where it stands.
+**Status:** pre-alpha, built in public. The app at the root builds and the [gate](gate/README.md) runs, but expect change. The [build log](build-log/) shows where it stands.
 
 ## Why
 
@@ -16,15 +16,19 @@ Most starters give you the code you would otherwise write on day one. The expens
 
 ## Shape
 
+The repository root is the app: a minimal TanStack Start project on Cloudflare Workers.
+
 ```
-core/             shared by every project: gate runner, rules + tests, agent instructions,
-                  brief template, lessons loop, sync
-templates/web/    TanStack Start on Cloudflare, with presets for sites and dashboards
-recipes/          documented, tested add-ons: databases, auth, deploy targets, observability
-build-log/        how it's being built, in order
+src/            the app: routes, and styles/tokens.css (the only place raw colours and sizes belong)
+gate/           the gate: slop rules, fixtures that prove them, and the ratchet
+scripts/        repository tooling
+build-log/      how it's being built, in order
+.githooks/      pre-push runs the gate
 ```
 
-A mobile template (Expo) will share the same core once a real mobile project needs it.
+Try it with `bun install`, then `bun run dev`. `bun run gate` runs typecheck, oxlint, the rule tests, the six slop rules and the ratchet. See [gate/README.md](gate/README.md) for what each rule blocks and why.
+
+More is planned, not built: shared agent instructions, generators and add-on recipes (databases, auth, deploy targets).
 
 ## Defaults
 
@@ -32,7 +36,7 @@ Bun, React 19, Vite, Tailwind 4, TypeScript strict, TanStack Start with exact pi
 
 ## Open core
 
-The core, the web template and the basic recipes are open source. Premium add-ons (taste packs, larger recipes, the mobile template and upgrade tooling) will be offered separately. They are copied in at development time and never become runtime dependencies.
+The starter, the gate and the basic recipes are open source. Premium add-ons (taste packs, larger recipes, the mobile template and upgrade tooling) will be offered separately. They are copied in at development time and never become runtime dependencies.
 
 ## License
 

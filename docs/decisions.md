@@ -15,3 +15,6 @@ Newest at the bottom. Each one records what was decided and why.
 | 2026-11-02 | vitalistack.com is the project's home | Short, matches the name; the build-log site will live there on Cloudflare. |
 | 2026-11-02 | The project teaches first: own your stack and know the fundamentals of building with AI | Content and learning come before revenue. |
 | 2026-11-02 | Copyright holder is DesignAnswers Oy | The company that maintains and sells Vitali Stack. |
+| 2026-11-03 | The app lives at the repository root, not under a `templates/` folder | Someone who clones the repo gets a working app; one stack needs no template indirection yet. |
+| 2026-11-03 | Gate rules are plain TypeScript files, not oxlint plugins or ast-grep rules | No extra dependency, readable by a learner, and each rule is fixture-tested the same way. |
+| 2026-11-03 | The ratchet runs before every push and in CI | It blocks only new hardcoded visual values, so existing code never blocks adoption; checking before push avoids CI-only surprises. |

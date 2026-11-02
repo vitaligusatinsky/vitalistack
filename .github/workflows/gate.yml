@@ -1,0 +1,33 @@
+name: Gate
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.3
+      - run: bun install --frozen-lockfile
+      - name: Choose the ratchet base
+        run: |
+          if [ "$EVENT" = "pull_request" ]; then BASE="$PR_BASE"; else BASE="$PUSH_BEFORE"; fi
+          # The first push of a branch reports an all-zero SHA: no base, so the ratchet falls back to origin/main.
+          case "$BASE" in 0000000000000000000000000000000000000000) BASE="" ;; esac
+          if [ -n "$BASE" ] && ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
+            echo "::warning::base $BASE is not in this clone (force push?); the ratchet falls back to origin/main"
+            BASE=""
+          fi
+          echo "GATE_BASE=$BASE" >> "$GITHUB_ENV"
+        env:
+          EVENT: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+      - run: bun run gate
