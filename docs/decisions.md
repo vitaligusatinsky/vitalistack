@@ -12,3 +12,4 @@ Newest at the bottom. Each one records what was decided and why.
 | 2026-11-02 | No shared package and no template-update tool yet | Hooks inside a package fail in fresh worktrees; added only once a second project needs updates. |
 | 2026-11-02 | Open core (MIT) with premium add-ons that are copied in at development time | Keeps premium out of runtime dependencies and deploy builds. |
 | 2026-11-02 | Built in public, with a build log for every phase | The process is part of the product. |
+| 2026-11-02 | vitalistack.com is the project's home | Short, matches the name; the build-log site will live there on Cloudflare. |
