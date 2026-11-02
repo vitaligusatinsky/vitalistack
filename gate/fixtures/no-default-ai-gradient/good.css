@@ -1,0 +1,7 @@
+.ghost {
+  color: transparent;
+  background-clip: padding-box;
+}
+.fade {
+  background: linear-gradient(90deg, var(--color-surface), var(--color-surface-raised));
+}

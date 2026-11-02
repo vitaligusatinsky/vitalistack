@@ -1,0 +1,19 @@
+.note {
+  border-left: 4px solid var(--color-accent); /* @expect no-side-accent-border */
+}
+.note2 {
+  border-inline-start: 0.25rem solid var(--color-accent); /* @expect no-side-accent-border */
+}
+.note3 {
+  border-right-width: 3px; /* @expect no-side-accent-border */
+}
+.note4 {
+  border-left: thick solid var(--color-accent); /* @expect no-side-accent-border */
+}
+.note5 {
+  @apply border-l-4; /* @expect no-side-accent-border */
+}
+.note6 {
+  /* vs-allow no-side-accent-border: legacy embed needs the bar, tracked in review */
+  border-left: 4px solid var(--color-accent);
+}

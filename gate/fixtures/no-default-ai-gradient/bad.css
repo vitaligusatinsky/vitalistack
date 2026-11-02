@@ -1,0 +1,12 @@
+.title {
+  background: linear-gradient(90deg, var(--color-accent), var(--color-ink));
+  background-clip: text; /* @expect no-default-ai-gradient */
+  color: transparent;
+}
+.title2 {
+  -webkit-background-clip: text; /* @expect no-default-ai-gradient */
+  -webkit-text-fill-color: transparent;
+}
+.hero {
+  @apply bg-linear-to-r from-violet-500 to-indigo-500; /* @expect no-default-ai-gradient */
+}

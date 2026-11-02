@@ -1,0 +1,3 @@
+.card {
+  @apply bg-surface text-ink border-border;
+}
