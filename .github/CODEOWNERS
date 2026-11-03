@@ -1,0 +1,6 @@
+# The gate is code that other code is checked by. A pull request that changes it
+# needs the owner's review, so a weakened rule is a reviewed change.
+/gate/ @vitaligusatinsky
+/.githooks/ @vitaligusatinsky
+/.github/ @vitaligusatinsky
+/scripts/install-hooks.ts @vitaligusatinsky

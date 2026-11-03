@@ -16,13 +16,23 @@ jobs:
         with:
           bun-version: 1.3.3
       - run: bun install --frozen-lockfile
+      - name: Warn when the gate itself changed
+        if: github.event_name == 'pull_request'
+        run: |
+          changed=$(git diff --name-only "$PR_BASE" HEAD -- gate .githooks | tr '\n' ' ')
+          if [ -n "$changed" ]; then
+            echo "::warning title=This pull request changes the gate::$changed"
+          fi
+        env:
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
       - name: Choose the ratchet base
         run: |
           if [ "$EVENT" = "pull_request" ]; then BASE="$PR_BASE"; else BASE="$PUSH_BEFORE"; fi
-          # The first push of a branch reports an all-zero SHA: no base, so the ratchet falls back to origin/main.
+          # A first push or a force push has no usable base (all-zero or missing SHA).
+          # An empty GATE_BASE makes the ratchet run its full scan in blocking mode.
           case "$BASE" in 0000000000000000000000000000000000000000) BASE="" ;; esac
           if [ -n "$BASE" ] && ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
-            echo "::warning::base $BASE is not in this clone (force push?); the ratchet falls back to origin/main"
+            echo "::warning::base $BASE is not in this clone (force push?); the ratchet runs its full scan"
             BASE=""
           fi
           echo "GATE_BASE=$BASE" >> "$GITHUB_ENV"
