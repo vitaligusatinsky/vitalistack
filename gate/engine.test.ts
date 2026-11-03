@@ -218,3 +218,63 @@ describe("B6 the hook installer", () => {
     expect(hooksPath()).toBe("");
   });
 });
+
+describe("round 4", () => {
+  const stdinFor = (sha: string, remoteSha: string) => `refs/heads/main ${sha} refs/heads/main ${remoteSha}\n`;
+
+  test("R4-12 the hook never passes with no base because an upstream equals the pushed commit", () => {
+    file("src/raw.tsx", 'export const s = { color: "#123456" };\n');
+    const bad = commit();
+    git("update-ref", "refs/remotes/origin/main", bad); // the upstream is the pushed commit
+    git("config", "remote.origin.url", "git@example.test:x/y.git");
+    git("config", "remote.origin.fetch", "+refs/heads/*:refs/remotes/origin/*");
+    git("config", "branch.main.remote", "origin");
+    git("config", "branch.main.merge", "refs/heads/main");
+    expect(git("rev-parse", "main@{upstream}")).toBe(bad); // the upstream really is the pushed commit
+    const r = script("pre-push.ts", ["origin"], stdinFor(bad, "f".repeat(40))); // a remote sha we do not have
+    expect(r.status).toBe(1);
+    expect(r.stdout).toContain("no base found, running the full scan (blocking)");
+  });
+
+  test("R4-13 the real .githooks/pre-push enforces: a bad pushed commit fails it, a clean one passes", () => {
+    // A throwaway repository holding the real hook, the real gate and stub typecheck and lint scripts.
+    const real = join(gate, "..");
+    mkdirSync(join(repo, ".githooks"), { recursive: true });
+    writeFileSync(join(repo, ".githooks", "pre-push"), readFileSync(join(real, ".githooks", "pre-push")));
+    spawnSync("chmod", ["+x", join(repo, ".githooks", "pre-push")]);
+    spawnSync("cp", ["-R", gate, join(repo, "gate")]);
+    rmSync(join(repo, "gate", "fixtures"), { recursive: true, force: true });
+    spawnSync("ln", ["-s", join(real, "node_modules"), join(repo, "node_modules")]);
+    writeFileSync(join(repo, ".gitignore"), "node_modules\n");
+    writeFileSync(join(repo, "package.json"), JSON.stringify({ scripts: { typecheck: "true", lint: "true" } }));
+    const remote = commit();
+    file("src/bad.tsx", 'export const A = () => <i className="bg-white" />;\n');
+    const bad = commit();
+    const hook = (input: string) =>
+      spawnSync("sh", [join(repo, ".githooks", "pre-push"), "origin", "git@example.test:x/y.git"], { cwd: repo, encoding: "utf8", input, env: { ...process.env, CI: "", GATE_BASE: "", GATE_ROOT: "" } });
+    const failing = hook(stdinFor(bad, remote));
+    expect(failing.status).not.toBe(0);
+    expect(failing.stdout).toContain("pre-push: checking refs/heads/main");
+    expect(failing.stdout).toContain("src/bad.tsx:1");
+    const passing = hook(stdinFor(remote, remote));
+    expect(passing.status).toBe(0);
+    // a failing typecheck stops the hook before the commit check
+    writeFileSync(join(repo, "package.json"), JSON.stringify({ scripts: { typecheck: "false", lint: "true" } }));
+    expect(hook(stdinFor(remote, remote)).status).not.toBe(0);
+  });
+
+  test("R4-14 the CI warning pathspec covers every path CODEOWNERS covers", () => {
+    const wf = readFileSync(join(gate, "..", ".github", "workflows", "gate.yml"), "utf8");
+    const m = /git diff --name-only "\$PR_BASE" HEAD -- ([^|]+)\|/.exec(wf);
+    expect(m).not.toBeNull();
+    const pathspec = m![1]!.trim().split(/\s+/);
+    for (const changed of ["gate/rules/a.ts", ".githooks/pre-push", "package.json", ".oxlintrc.json", "scripts/install-hooks.ts", ".github/workflows/gate.yml", ".github/CODEOWNERS"]) {
+      file(changed, "x\n");
+      commit();
+      file(changed, "y\n");
+      commit();
+      const out = git("diff", "--name-only", "HEAD~1", "HEAD", "--", ...pathspec);
+      expect(out).toBe(changed);
+    }
+  });
+});

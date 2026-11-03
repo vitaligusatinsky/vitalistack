@@ -39,13 +39,15 @@ function verify(root: string, ref: string): string {
  * An explicit --base or a non-empty GATE_BASE that cannot be resolved is an error, never a fallback.
  * An empty or all-zero GATE_BASE (what a first push reports) counts as unset.
  * `rev` is the commit being checked (HEAD by default). On CI, a merge-base equal to `rev`
- * means nothing is left to compare, so it also returns null.
+ * means nothing is left to compare, so it also returns null; so does any base equal to an
+ * explicitly requested `rev` (a hook checking a pushed commit against itself would pass vacuously).
  */
 export function resolveBase(
   root: string,
   baseArg: string | undefined,
   env: Record<string, string | undefined>,
   rev = "HEAD",
+  explicitRev = false,
 ): Base | null {
   if (baseArg !== undefined) {
     if (baseArg === "") throw new Error("ratchet: --base requires a Git commit or ref");
@@ -55,14 +57,14 @@ export function resolveBase(
   const head = verify(root, rev);
   if (fromEnv && !ZERO.test(fromEnv)) {
     const sha = verify(root, fromEnv);
-    if (sha === head && env.CI) return null; // nothing left to compare on CI
+    if (sha === head && (env.CI || explicitRev)) return null; // nothing left to compare
     return { sha, source: `GATE_BASE=${fromEnv.slice(0, 12)}` };
   }
   const upstream = tryGit(root, ["merge-base", rev, "@{upstream}"]);
   const origin = upstream ? null : tryGit(root, ["merge-base", rev, "origin/main"]);
   const sha = upstream ?? origin;
   if (!sha) return null;
-  if (sha === head && env.CI) return null;
+  if (sha === head && (env.CI || explicitRev)) return null;
   return { sha, source: upstream ? "merge-base with @{upstream}" : "merge-base with origin/main" };
 }
 

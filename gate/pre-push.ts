@@ -19,9 +19,14 @@ const git = (args: string[]) => {
 
 /** The commit to compare a push against: what the remote has, else the merge-base with its default branch, else none. */
 export function baseFor(remoteSha: string, localSha: string): string | null {
-  if (!ZERO.test(remoteSha) && git(["cat-file", "-e", `${remoteSha}^{commit}`]) !== null) return remoteSha;
-  const head = git(["symbolic-ref", "--short", `refs/remotes/${remote}/HEAD`]) ?? `${remote}/main`;
-  return git(["merge-base", localSha, head]) || null;
+  let base: string | null = null;
+  if (!ZERO.test(remoteSha) && git(["cat-file", "-e", `${remoteSha}^{commit}`]) !== null) base = remoteSha;
+  else {
+    const head = git(["symbolic-ref", "--short", `refs/remotes/${remote}/HEAD`]) ?? `${remote}/main`;
+    base = git(["merge-base", localSha, head]) || null;
+  }
+  // A base equal to the pushed commit compares it with itself and passes vacuously: scan in full instead.
+  return base === localSha ? null : base;
 }
 
 const input = await Bun.stdin.text();
@@ -35,7 +40,9 @@ for (const line of lines) {
   const base = baseFor(remoteSha, localSha);
   console.log(`pre-push: checking ${localRef} at ${localSha.slice(0, 10)}${base ? `, base ${base.slice(0, 10)}` : ", no base"}`);
   const run = spawnSync(process.execPath, [join(import.meta.dir, "run.ts"), "--rev", localSha], { cwd: root, stdio: "inherit" });
-  const ratchet = spawnSync(process.execPath, [join(import.meta.dir, "ratchet.ts"), "--rev", localSha, ...(base ? ["--base", base] : [])], { cwd: root, stdio: "inherit" });
+  // No base is an explicit mode, never a fallback: the ratchet's own search for an upstream could
+  // pick the pushed commit itself and pass without comparing anything.
+  const ratchet = spawnSync(process.execPath, [join(import.meta.dir, "ratchet.ts"), "--rev", localSha, ...(base ? ["--base", base] : ["--full-scan-blocking"])], { cwd: root, stdio: "inherit" });
   if (run.status !== 0 || ratchet.status !== 0) failed = true;
 }
 if (checked === 0) console.log("pre-push: no commits to check");

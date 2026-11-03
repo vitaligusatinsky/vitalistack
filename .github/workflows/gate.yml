@@ -19,7 +19,7 @@ jobs:
       - name: Warn when the gate itself changed
         if: github.event_name == 'pull_request'
         run: |
-          changed=$(git diff --name-only "$PR_BASE" HEAD -- gate .githooks package.json .oxlintrc.json | tr '\n' ' ')
+          changed=$(git diff --name-only "$PR_BASE" HEAD -- gate .githooks .github scripts/install-hooks.ts package.json .oxlintrc.json | tr '\n' ' ')
           if [ -n "$changed" ]; then
             echo "::warning title=This pull request changes the gate::$changed"
           fi
@@ -29,13 +29,14 @@ jobs:
         run: |
           if [ "$EVENT" = "pull_request" ]; then BASE="$PR_BASE"; else BASE="$PUSH_BEFORE"; fi
           # A first push or a force push has no usable base (all-zero or missing SHA).
-          # An empty GATE_BASE makes the ratchet run its full scan in blocking mode.
+          # With no base, GATE_FULL_SCAN=1 makes the ratchet run its full scan in blocking mode.
           case "$BASE" in 0000000000000000000000000000000000000000) BASE="" ;; esac
           if [ -n "$BASE" ] && ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
             echo "::warning::base $BASE is not in this clone (force push?); the ratchet runs its full scan"
             BASE=""
           fi
           echo "GATE_BASE=$BASE" >> "$GITHUB_ENV"
+          if [ -z "$BASE" ]; then echo "GATE_FULL_SCAN=1" >> "$GITHUB_ENV"; fi
         env:
           EVENT: ${{ github.event_name }}
           PR_BASE: ${{ github.event.pull_request.base.sha }}

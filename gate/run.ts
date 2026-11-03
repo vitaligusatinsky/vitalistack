@@ -40,5 +40,5 @@ for (const file of files) {
 console.log("");
 console.log(`gate: ${rules.length} rules, ${files.length} files scanned${rev ? ` at ${rev.slice(0, 10)}` : ""}, ${blocking} finding(s)`);
 console.log(`gate: vs-allow exemptions used: ${used.length}`);
-for (const e of used) console.log(`  ${e.file}:${e.line} ${e.ruleId} "${e.reason}"`);
+for (const e of used) console.log(`  ${e.file}:${e.line} ${e.ruleId} "${e.reason}"${e.count > 1 ? ` (exempts ${e.count} findings)` : ""}`);
 process.exit(blocking > 0 ? 1 : 0);

@@ -238,7 +238,20 @@ function markdownRanges(text: string): { comments: Array<[number, number]>; code
     }
     pos += row.length + 1;
   }
-  for (const m of text.matchAll(/<!--[\s\S]*?-->/g)) comments.push([m.index!, m.index! + m[0].length]);
+  // HTML comments count only where they start outside code, so an opener inside a fenced example
+  // cannot swallow the prose after it.
+  const inCode = (i: number) => code.some(([a, b]) => i >= a && i < b);
+  let at = 0;
+  while ((at = text.indexOf("<!--", at)) >= 0) {
+    if (inCode(at)) {
+      at += 4;
+      continue;
+    }
+    const close = text.indexOf("-->", at + 4);
+    const end = close < 0 ? text.length : close + 3;
+    comments.push([at, end]);
+    at = end;
+  }
   return { comments, code };
 }
 
@@ -369,8 +382,16 @@ function tokenize(masked: string, start: number, end: number): ClassToken[] {
   for (const m of text.matchAll(SPLIT)) {
     let base = m[0];
     let variant = "";
-    const cut = base.includes("[") ? base.lastIndexOf("]:") + 1 : base.lastIndexOf(":");
-    if (cut > 0 && base[cut] === ":") {
+    // The variant prefix ends at the last ':' outside any [...] (so [&:hover]: and /[.5] both work).
+    let depth = 0;
+    let cut = -1;
+    for (let i = 0; i < base.length; i++) {
+      const c = base[i];
+      if (c === "[") depth++;
+      else if (c === "]") depth = Math.max(0, depth - 1);
+      else if (c === ":" && depth === 0) cut = i;
+    }
+    if (cut > 0) {
       variant = base.slice(0, cut);
       base = base.slice(cut + 1);
     }
@@ -423,7 +444,7 @@ export function parseAllow(body: string): { ruleId: string; reason: string } | n
   return { ruleId: m[1]!, reason };
 }
 
-export type Exemption = { file: string; line: number; ruleId: string; reason: string };
+export type Exemption = { file: string; line: number; ruleId: string; reason: string; /** Findings this comment exempted. */ count: number };
 export type Checked = { findings: Finding[]; exempt: Finding[]; used: Exemption[] };
 
 /**
@@ -449,7 +470,9 @@ export function applyExemptions(info: Analysis, findings: Finding[]): Checked {
     const hit = byLine.get(f.line)?.find((a) => a.ruleId === f.ruleId);
     if (hit) {
       exempt.push(f);
-      used.set(`${hit.commentLine}:${hit.ruleId}`, { file: info.file, line: hit.commentLine, ruleId: hit.ruleId, reason: hit.reason });
+      const key = `${hit.commentLine}:${hit.ruleId}`;
+      const prev = used.get(key);
+      used.set(key, prev ? { ...prev, count: prev.count + 1 } : { file: info.file, line: hit.commentLine, ruleId: hit.ruleId, reason: hit.reason, count: 1 });
     } else kept.push(f);
   }
   return { findings: kept, exempt, used: [...used.values()] };

@@ -199,7 +199,7 @@ describe("B3 escape hatch", () => {
     const r = checkContent(rules, "x.ts", src);
     expect(r.exempt.length).toBeGreaterThan(1);
     expect(r.used.length).toBe(1);
-    expect(r.used[0]).toEqual({ file: "x.ts", line: 1, ruleId: "no-raw-palette", reason: "a long enough reason" });
+    expect(r.used[0]).toEqual({ file: "x.ts", line: 1, ruleId: "no-raw-palette", reason: "a long enough reason", count: 3 });
   });
   test("applyExemptions takes an analysis, not raw text", () => {
     const info = analyze("x.ts", '// vs-allow no-raw-palette: a long enough reason\nconst c = "bg-white";\n');
@@ -286,5 +286,35 @@ describe("round 3", () => {
     const r = ids('export default { hero: "bg-gradient-to-r from-purple-500 to-pink-500" };', "src/theme.config.ts");
     expect(r.join()).toContain("no-default-ai-gradient@1");
     expect(ids("export const H = () => <h1>Unlock the potential \u2014 now</h1>;", "src/components/Hero.config.tsx").join()).toContain("no-slop-copy@1");
+  });
+});
+
+describe("round 4", () => {
+  test("R4-5 a bracketed opacity does not hide the variant prefix", () => {
+    expect(ids('const c = "hover:bg-blue-500/[.5]";')).toEqual(["no-raw-palette@1"]);
+    expect(ids('const c = "md:hover:text-white/[0.4] [&:hover]:bg-black/[.2]";')).toEqual(["no-raw-palette@1", "no-raw-palette@1"]);
+    expect(ids('const c = "[&_p]:text-ink hover:bg-surface/[.5]";')).toEqual([]);
+  });
+  test("R4-6 palette variables with a fallback, and black or white variables", () => {
+    expect(ids(".a { background: var(--color-blue-500, transparent); }\n", "x.css")).toEqual(["no-raw-palette@1"]);
+    expect(ids(".a { color: var(--color-white); }\n", "x.css")).toEqual(["no-raw-palette@1"]);
+    expect(ids(".a { color: var( --color-black ); }\n", "x.css")).toEqual(["no-raw-palette@1"]);
+    expect(ids(".a { color: var(--color-ink, #000); }\n", "x.css")).toEqual([]);
+  });
+  test("R4-7 an HTML comment opener inside a fenced block does not mask prose after the fence", () => {
+    const src = "```\n<!--\n```\nIt is Seamless.\n<!-- note -->\n";
+    expect(ids(src, "x.md")).toEqual(["no-slop-copy@4"]);
+  });
+  test("R4-9 explicit physics decides even when bounce: 0 is present", () => {
+    const m = "import { motion } from 'motion/react';\n";
+    expect(ids(m + "export const s = { type: 'spring', stiffness: 100, damping: 1, bounce: 0 };", "x.ts").join()).toContain("no-bounce-motion@2");
+    expect(ids(m + "export const s = { type: 'spring', stiffness: 400, damping: 40, bounce: 0 };", "x.ts")).toEqual([]);
+    expect(ids(m + "export const s = { type: 'spring', bounce: 0 };", "x.ts")).toEqual([]);
+  });
+  test("R4-10 a full border at least as wide cancels the side accent", () => {
+    expect(ids('const c = "border-l-4 border-4";')).toEqual([]);
+    expect(ids('const c = "border-l-4 border-2";')).toEqual(["no-side-accent-border@1"]);
+    expect(ids('const c = "border-l-4 border";')).toEqual(["no-side-accent-border@1"]);
+    expect(ids('const c = "border-l-2 border-2";')).toEqual([]);
   });
 });

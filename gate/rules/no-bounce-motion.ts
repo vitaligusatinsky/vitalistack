@@ -92,17 +92,21 @@ const rule: Rule = {
         const bounce = props.get("bounce");
         const bounceValue = bounce ? num(bounce.initializer) : null;
         if (inScope && bounce && bounceValue !== null && bounceValue > 0) out.push(finding(ID, lines, bounce.getStart(sf)));
-        if (inScope && isSpring && !bounce) {
+        if (inScope && isSpring) {
           const has = (k: string) => props.has(k);
           const physics = ["stiffness", "damping", "mass"].filter(has);
           const values = physics.map((k) => num(props.get(k)!.initializer));
-          if (values.every((v) => v !== null)) {
-            const get = (k: string) => (has(k) ? num(props.get(k)!.initializer)! : undefined);
-            const durationBased = (has("duration") || has("visualDuration")) && physics.length === 0;
-            // Duration-based springs default to bounce 0.25 in the motion library.
-            if (durationBased || (!durationBased && dampingRatio(get("stiffness"), get("damping"), get("mass")) < 1)) {
+          const get = (k: string) => (has(k) ? num(props.get(k)!.initializer)! : undefined);
+          // The motion library reads duration and bounce only when none of stiffness, damping or mass
+          // is set (its spring generator checks the physics keys first), so explicit physics decides
+          // even next to bounce: 0. Not installed in this repository, so that precedence is cited, not run.
+          if (physics.length > 0) {
+            if (values.every((v) => v !== null) && dampingRatio(get("stiffness"), get("damping"), get("mass")) < 1) {
               out.push(finding(ID, lines, type!.getStart(sf)));
             }
+          } else if (!bounce) {
+            // No physics and no bounce: the library default (stiffness 100, damping 10 or bounce 0.25) is bouncy.
+            out.push(finding(ID, lines, type!.getStart(sf)));
           }
         }
       }

@@ -7,7 +7,8 @@ const PREFIX =
 const PALETTE =
   "(?:red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|slate|gray|zinc|neutral|stone|mauve|olive|mist|taupe)";
 const RAW = new RegExp(`^${PREFIX}-(?:${PALETTE}-\\d{2,3}|black|white)(?:/\\S+)?$`);
-const VAR = new RegExp(`var\\(\\s*--color-${PALETTE}-\\d{2,3}\\s*\\)`, "g");
+// The first argument of var(): a palette shade, black or white. A fallback after a comma does not matter.
+const VAR = new RegExp(`var\\(\\s*--color-(?:${PALETTE}-\\d{2,3}|black|white)\\s*[,)]`, "g");
 
 const rule: Rule = {
   id: ID,

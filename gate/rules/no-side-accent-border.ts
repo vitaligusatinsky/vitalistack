@@ -37,11 +37,14 @@ const rule: Rule = {
   check(file: string, masked: string, info: Analysis): Finding[] {
     const out: Finding[] = [];
     for (const group of classGroups(info)) {
+      // A full border set in the same class list (border-4, border) at least as wide makes it a box, not a bar.
+      const full = (variant: string) =>
+        Math.max(0, ...group.tokens.filter((t) => t.variant === variant).map((t) => (t.base === "border" ? 1 : /^border-(\d+)$/.test(t.base) ? Number(t.base.slice(7)) : 0)));
       for (const t of group.tokens) {
         const m = TW_SIDE.exec(t.base);
         if (!m) continue;
         const width = m[1] !== undefined ? Number(m[1]) : px(Number(m[2]), m[3]);
-        if (width >= 2) out.push(finding(ID, info.lines, t.index));
+        if (width >= 2 && full(t.variant) < width) out.push(finding(ID, info.lines, t.index));
       }
     }
     for (const m of masked.matchAll(CSS_SIDE)) {

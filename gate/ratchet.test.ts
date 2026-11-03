@@ -84,6 +84,31 @@ describe("round 3 detectors", () => {
   });
 });
 
+describe("round 4 detectors", () => {
+  test("R4-2 a media query does not hide a pixel value elsewhere on the line", () => {
+    expect(codes("a.css", "@media (min-width: 640px) { .a { padding: 17px; } }\n")).toEqual(["raw-pixel"]);
+    expect(tokens("a.css", "@media (min-width: 640px) { .a { padding: 17px; } }\n")).toEqual(["17px"]);
+    expect(codes("a.tsx", 'const q = window.matchMedia("(min-width: 768px)"); const s = { margin: "9px" };\n')).toEqual(["raw-pixel"]);
+  });
+  test("R4-2 hash and href do not hide a colour elsewhere on the line", () => {
+    expect(tokens("a.tsx", 'export const A = () => <div id="hash" style={{ color: "#abc" }} />;\n')).toEqual(["#abc"]);
+    expect(tokens("a.tsx", 'export const A = () => <a href="#abc" style={{ color: "#def" }} />;\n')).toEqual(["#def"]);
+    expect(codes("a.tsx", 'export const A = () => <a href="#abc">x</a>;\n')).toEqual([]);
+    expect(codes("a.tsx", 'if (location.hash === "#abc") { go(); }\n')).toEqual([]);
+  });
+  test("R4-4 negative pixels, color(), em shadows, quoted keys and wrappers", () => {
+    expect(codes("a.css", ".a { margin-left: -17px; }\n")).toEqual(["raw-pixel"]);
+    expect(codes("a.css", ".b { color: color(display-p3 1 0 0); }\n")).toContain("raw-color");
+    expect(codes("a.css", ".c { box-shadow: 0 0 1em currentColor; }\n")).toContain("raw-shadow");
+    expect(codes("a.tsx", 'export const A = () => <div style={{ "padding": 17, "color": "red" }} />;\n')).toEqual(["raw-style-number", "raw-color"]);
+    expect(codes("a.tsx", "export const s = { padding: 17 as number, margin: (8), gap: 4 satisfies number, top: -3 };\n")).toEqual(["raw-style-number", "raw-style-number", "raw-style-number", "raw-style-number"]);
+    expect(codes("a.tsx", 'export const s = { padding: 0 as number, "width": "var(--w)" };\n')).toEqual([]);
+  });
+  test("R4-10 unitless ratios are not raw style numbers", () => {
+    expect(codes("a.tsx", "export const s = { lineHeight: 1.5, opacity: 0.5, flex: 1, zIndex: 10, fontWeight: 600 };\n")).toEqual([]);
+  });
+});
+
 describe.each([
   ["package at the repository root", ""],
   ["package in an oss/ subdirectory", "oss"],
@@ -377,6 +402,62 @@ describe.each([
     commit();
     file("src/m.tsx", a("two"));
     expect(run(HEAD).status).toBe(0);
+  });
+
+  test("R4-3 a rename from an excluded path into scanned scope has no inherited baseline", () => {
+    for (const [from, to] of [
+      ["src/card.test.tsx", "src/card.tsx"],
+      ["gate/x.ts", "src/x.ts"],
+      ["scripts/t.ts", "src/t.ts"],
+      ["tailwind.config.ts", "src/theme.ts"],
+      ["public/a.js", "src/a.js"],
+      ["src/styles/tokens.css", "src/styles/app.css"],
+    ] as const) {
+      file(from, "export const s = { padding: 17 };\n");
+      const css = from.endsWith(".css");
+      if (css) file(from, ".a { padding: 17px; }\n");
+      commit();
+      mkdirSync(dirname(join(pkg, to)), { recursive: true });
+      renameSync(join(pkg, from), join(pkg, to));
+      git("add", "-A");
+      expect(run(HEAD).status).toBe(1);
+      git("reset", "--hard", "HEAD");
+    }
+  });
+
+  describe("R4-12 an explicit full-scan mode that never falls back", () => {
+    const MSG = "no base found, running the full scan (blocking)";
+    test("--full-scan-blocking scans in full even when an upstream equals HEAD", () => {
+      file("src/a.tsx", 'export const a = "#111111";\n');
+      commit();
+      git("update-ref", "refs/remotes/origin/main", git("rev-parse", "HEAD"));
+      expect(run().status).toBe(0); // the old fallback: upstream equals HEAD, nothing to compare
+      const r = run(["--full-scan-blocking"]);
+      expect(r.status).toBe(1);
+      expect(r.stderr).toContain(MSG);
+    });
+    test("GATE_FULL_SCAN=1 does the same", () => {
+      file("src/a.tsx", 'export const a = "#111111";\n');
+      commit();
+      git("update-ref", "refs/remotes/origin/main", git("rev-parse", "HEAD"));
+      expect(run([], { GATE_FULL_SCAN: "1" }).status).toBe(1);
+    });
+    test("--rev with a base that resolves to the checked commit does not pass vacuously", () => {
+      file("src/a.tsx", 'export const a = "#111111";\n');
+      const bad = commit();
+      git("update-ref", "refs/remotes/origin/main", bad);
+      const r = run(["--rev", bad]);
+      expect(r.status).toBe(1);
+      expect(r.stderr).toContain(MSG);
+    });
+  });
+
+  test("R4-11 the ratchet prints each exemption and how many findings it covered", () => {
+    file("src/a.css", "/* vs-allow raw-color: legacy brand colours kept for now */\n.a { color: #abc; background: #def; }\n");
+    const r = spawnSync(process.execPath, [cli, "--base=HEAD"], { cwd: pkg, encoding: "utf8", env: { ...process.env, GATE_ROOT: pkg, CI: "" } });
+    expect(r.status).toBe(0);
+    expect(r.stdout).toContain("vs-allow exemptions used: 1");
+    expect(r.stdout).toContain('src/a.css:1 raw-color "legacy brand colours kept for now" (exempts 2 findings)');
   });
 
   describe("B4 --rev checks the commit, not the working tree", () => {
