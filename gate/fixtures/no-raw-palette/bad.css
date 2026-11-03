@@ -1,3 +1,6 @@
 .card {
   @apply bg-white text-gray-900; /* @expect no-raw-palette */
 }
+.card2 {
+  color: var(--color-blue-500); /* @expect no-raw-palette */
+}

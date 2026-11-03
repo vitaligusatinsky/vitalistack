@@ -1,0 +1,35 @@
+// Phrases the copy rule blocks, matched case-insensitively and bounded by
+// word edges ("seamless" does not match "seamlessly"; add both if you want both).
+// A space matches any whitespace and a hyphen matches a hyphen or a space.
+// Edit this list for your project.
+export const PHRASES: string[] = [
+  "incredibly",
+  "absolutely",
+  "truly",
+  "extremely",
+  "it's important to note",
+  "let's dive in",
+  "in conclusion",
+  "that said",
+  "one might argue",
+  "delve into",
+  "leveraged",
+  "empowered",
+  "spearheaded",
+  "deliverables",
+  "synergies",
+  "stakeholders",
+  "moving forward",
+  "harness the power of",
+  "unlock the potential",
+  "feel free to reach out",
+  "great question",
+  "in today's",
+  "elevate your",
+  "seamless",
+  "supercharge",
+  "game-changer",
+  "revolutionize",
+  "cutting-edge",
+  "next-level",
+];

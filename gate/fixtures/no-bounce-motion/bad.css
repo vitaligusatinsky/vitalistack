@@ -7,3 +7,6 @@
 .pop3 {
   @apply animate-bounce; /* @expect no-bounce-motion */
 }
+.pop4 {
+  animation: bounce 1s infinite; /* @expect no-bounce-motion */
+}

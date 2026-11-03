@@ -5,3 +5,6 @@
 .fade {
   background: linear-gradient(90deg, var(--color-surface), var(--color-surface-raised));
 }
+.sunrise {
+  background: linear-gradient(90deg, #f97316, #facc15);
+}

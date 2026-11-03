@@ -14,6 +14,13 @@ export function Bad() {
       <svg className="fill-emerald-400" />{/* @expect no-raw-palette */}
       <div className="divide-gray-200 divide-y">K</div> {/* @expect no-raw-palette */}
       <div className={`p-4 ${open ? "bg-amber-100" : ""}`}>L</div> {/* @expect no-raw-palette */}
+      <div className="bg-white!">important suffix</div> {/* @expect no-raw-palette */}
+      <div className="!bg-white">important prefix</div> {/* @expect no-raw-palette */}
+      <div className="inset-ring-gray-300 inset-ring">M</div> {/* @expect no-raw-palette */}
+      <div className="inset-shadow-black/20">N</div> {/* @expect no-raw-palette */}
+      <div className="bg-mauve-500">new v4 palette</div> {/* @expect no-raw-palette */}
+      <div className="text-taupe-700">new v4 palette</div> {/* @expect no-raw-palette */}
+      <div style={{ color: "var(--color-red-500)" }}>var</div> {/* @expect no-raw-palette */}
       {/* vs-allow no-raw-palette: third-party brand colour that must match the vendor logo */}
       <div className="bg-sky-500">M</div>
       {/* vs-allow no-raw-palette */}

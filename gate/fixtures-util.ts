@@ -22,3 +22,10 @@ export function expectedLines(content: string, ruleId: string): number[] {
   });
   return out;
 }
+
+/** The oxlint fixture of require-accessible-name, with its config. */
+export function oxlintFixture(): { name: string; file: string; config: string } | null {
+  const dir = join(base, "require-accessible-name");
+  const file = join(dir, "oxlint-bad.tsx");
+  return existsSync(file) ? { name: "oxlint-bad.tsx", file, config: join(dir, "oxlintrc.json") } : null;
+}

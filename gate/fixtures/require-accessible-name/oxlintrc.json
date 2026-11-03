@@ -1,0 +1,9 @@
+{
+  "plugins": ["jsx-a11y"],
+  "categories": { "correctness": "off" },
+  "rules": {
+    "jsx-a11y/alt-text": "error",
+    "jsx-a11y/anchor-has-content": "error",
+    "jsx-a11y/control-has-associated-label": "error"
+  }
+}

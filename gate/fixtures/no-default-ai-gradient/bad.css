@@ -10,3 +10,9 @@
 .hero {
   @apply bg-linear-to-r from-violet-500 to-indigo-500; /* @expect no-default-ai-gradient */
 }
+.hero2 {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); /* @expect no-default-ai-gradient */
+}
+.hero3 {
+  background: radial-gradient(circle, oklch(0.6 0.25 295), oklch(0.65 0.25 340)); /* @expect no-default-ai-gradient */
+}

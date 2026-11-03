@@ -1,6 +1,11 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["typescript", "react", "import"],
+  "plugins": ["typescript", "react", "import", "jsx-a11y"],
   "categories": { "correctness": "error" },
+  "rules": {
+    "jsx-a11y/alt-text": "error",
+    "jsx-a11y/anchor-has-content": "error",
+    "jsx-a11y/control-has-associated-label": "error"
+  },
   "ignorePatterns": ["dist", ".tanstack", ".wrangler", "gate/fixtures", "src/routeTree.gen.ts"]
 }

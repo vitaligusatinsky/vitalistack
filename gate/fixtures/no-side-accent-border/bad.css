@@ -5,7 +5,7 @@
   border-inline-start: 0.25rem solid var(--color-accent); /* @expect no-side-accent-border */
 }
 .note3 {
-  border-right-width: 3px; /* @expect no-side-accent-border */
+  border-left-width: 3px; /* @expect no-side-accent-border */
 }
 .note4 {
   border-left: thick solid var(--color-accent); /* @expect no-side-accent-border */
@@ -14,6 +14,14 @@
   @apply border-l-4; /* @expect no-side-accent-border */
 }
 .note6 {
+  border-width: 0 0 0 4px; /* @expect no-side-accent-border */
+}
+.note7 {
   /* vs-allow no-side-accent-border: legacy embed needs the bar, tracked in review */
   border-left: 4px solid var(--color-accent);
+}
+.note8 {
+  /* the next comment is not a CSS comment and exempts nothing */
+  // vs-allow no-side-accent-border: line comments do not exist in CSS
+  border-left: 4px solid var(--color-accent); /* @expect no-side-accent-border */
 }
