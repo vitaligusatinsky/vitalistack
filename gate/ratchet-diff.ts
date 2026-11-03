@@ -26,38 +26,51 @@ export type Base = {
   source: string;
 };
 
+const ZERO = /^0+$/;
+
 function verify(root: string, ref: string): string {
   return gitOutput(root, ["rev-parse", "--verify", "--end-of-options", `${ref}^{commit}`]).trim();
 }
 
 /**
  * Pick the commit to compare against, in this order:
- *   --base=<ref>, env GATE_BASE, merge-base with @{upstream},
- *   merge-base with origin/main, then HEAD (uncommitted changes only).
- * An explicit --base or GATE_BASE that cannot be resolved is an error, never a fallback.
+ *   --base=<ref>, env GATE_BASE, merge-base with @{upstream}, merge-base with origin/main.
+ * Returns null when none resolves: the caller then runs the full scan in blocking mode.
+ * An explicit --base or a non-empty GATE_BASE that cannot be resolved is an error, never a fallback.
+ * An empty or all-zero GATE_BASE (what a first push reports) counts as unset.
+ * `rev` is the commit being checked (HEAD by default). On CI, a merge-base equal to `rev`
+ * means nothing is left to compare, so it also returns null.
  */
-export function resolveBase(root: string, baseArg: string | undefined, env: Record<string, string | undefined>): Base {
+export function resolveBase(
+  root: string,
+  baseArg: string | undefined,
+  env: Record<string, string | undefined>,
+  rev = "HEAD",
+): Base | null {
   if (baseArg !== undefined) {
     if (baseArg === "") throw new Error("ratchet: --base requires a Git commit or ref");
     return { sha: verify(root, baseArg), source: `--base=${baseArg}` };
   }
   const fromEnv = env.GATE_BASE?.trim();
-  if (fromEnv) return { sha: verify(root, fromEnv), source: `GATE_BASE=${fromEnv.slice(0, 12)}` };
-  const upstream = tryGit(root, ["merge-base", "HEAD", "@{upstream}"]);
-  if (upstream) return { sha: upstream, source: "merge-base with @{upstream}" };
-  const origin = tryGit(root, ["merge-base", "HEAD", "origin/main"]);
-  if (origin) return { sha: origin, source: "merge-base with origin/main" };
-  return { sha: verify(root, "HEAD"), source: "HEAD (no upstream and no origin/main: uncommitted changes only)" };
+  if (fromEnv && !ZERO.test(fromEnv)) return { sha: verify(root, fromEnv), source: `GATE_BASE=${fromEnv.slice(0, 12)}` };
+  const head = verify(root, rev);
+  const upstream = tryGit(root, ["merge-base", rev, "@{upstream}"]);
+  const origin = upstream ? null : tryGit(root, ["merge-base", rev, "origin/main"]);
+  const sha = upstream ?? origin;
+  if (!sha) return null;
+  if (sha === head && env.CI) return null;
+  return { sha, source: upstream ? "merge-base with @{upstream}" : "merge-base with origin/main" };
 }
 
 /**
- * Files changed in the working tree since `base`, staged or not, plus untracked
- * files. Paths are relative to `root`. The value is the path the file had at
- * `base` (differs after a rename), or null when the file is new.
+ * Files changed since `base`, with the path each had at `base` (differs after a
+ * rename; null when new). Without `rev` this compares the working tree (staged or
+ * not) and adds untracked files. With `rev` it compares the two commits only.
+ * Paths are relative to `root`.
  */
-export function changedFiles(root: string, base: string): Map<string, string | null> {
+export function changedFiles(root: string, base: string, rev?: string): Map<string, string | null> {
   const entries = gitOutput(root, [
-    "diff", "--relative", "--name-status", "-z", "--find-renames", "--diff-filter=ACMR", base, "--",
+    "diff", "--relative", "--name-status", "-z", "--find-renames", "--diff-filter=ACMR", base, ...(rev ? [rev] : []), "--",
   ]).split("\0");
   const files = new Map<string, string | null>();
   for (let i = 0; i < entries.length && entries[i];) {
@@ -72,8 +85,10 @@ export function changedFiles(root: string, base: string): Map<string, string | n
       files.set(first, status === "A" ? null : first);
     }
   }
-  for (const path of gitOutput(root, ["ls-files", "--others", "--exclude-standard", "-z"]).split("\0").filter(Boolean)) {
-    files.set(path, null);
+  if (!rev) {
+    for (const path of gitOutput(root, ["ls-files", "--others", "--exclude-standard", "-z"]).split("\0").filter(Boolean)) {
+      files.set(path, null);
+    }
   }
   return files;
 }
@@ -83,9 +98,12 @@ export function showAtBase(root: string, base: string, path: string): string {
   return gitOutput(root, ["show", `${base}:./${path}`]);
 }
 
-/** A multiset: adding another copy of an existing violation is still new. */
-export function newViolations<T extends { code: string; sample: string }>(current: T[], previous: T[]): T[] {
-  const key = (item: T) => `${item.code}\0${item.sample.trim()}`;
+/**
+ * A per-file multiset of (rule, matched token). Adding another copy of a token a
+ * file already had is still new; editing other tokens on the same line is not.
+ */
+export function newViolations<T extends { code: string; token: string }>(current: T[], previous: T[]): T[] {
+  const key = (item: T) => `${item.code}\0${item.token}`;
   const counts = new Map<string, number>();
   for (const item of previous) counts.set(key(item), (counts.get(key(item)) ?? 0) + 1);
   return current.filter((item) => {
