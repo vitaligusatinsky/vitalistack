@@ -26,7 +26,7 @@ build-log/      how it's being built, in order
 .githooks/      pre-push runs the gate
 ```
 
-Try it with `bun install`, then `bun run dev`. `bun run gate` runs typecheck, oxlint, the rule tests, the six slop rules and the ratchet. See [gate/README.md](gate/README.md) for what each rule blocks and why.
+Try it with `bun install`, then `bun run dev`. `bun run gate` runs typecheck, oxlint, the tests, seven slop rules that span design, UX and copy, and a ratchet against new hardcoded visual values. It blocks known agent slop; it does not make a design good. See [gate/README.md](gate/README.md) for what each rule blocks and why.
 
 More is planned, not built: shared agent instructions, generators and add-on recipes (databases, auth, deploy targets).
 
