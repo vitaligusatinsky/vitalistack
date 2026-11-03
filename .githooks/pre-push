@@ -2,7 +2,8 @@
 # Runs before every push. Install with `bun install` (the prepare script).
 # Git passes the refs being pushed on stdin; keep them for the commit check.
 input=$(cat)
-# Typecheck, lint and tests look at the working tree.
-bun run typecheck && bun run lint && bun test gate || exit 1
+# Typecheck and lint look at the working tree. The gate's own test suite
+# (about a minute) runs in `bun run gate` and in CI, not on every push.
+bun run typecheck && bun run lint || exit 1
 # The rules and the ratchet look at the pushed commits themselves.
 printf '%s\n' "$input" | bun gate/pre-push.ts "$1"

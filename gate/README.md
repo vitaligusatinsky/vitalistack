@@ -19,7 +19,7 @@ bun test gate        # asserts the fired lines equal the marked lines, exactly
 4. `bun gate/run.ts` (the seven rules)
 5. `bun gate/ratchet.ts` (new hardcoded visual values)
 
-The `.githooks/pre-push` hook runs steps 1 to 3 on your working tree, then runs steps 4 and 5 on **the commits being pushed** (`--rev <sha>`), so a violation cannot be fixed on disk only and still be pushed. CI runs the whole of `bun run gate` on every pull request and push to main.
+The `.githooks/pre-push` hook runs steps 1 and 2 on your working tree, then runs steps 4 and 5 on **the commits being pushed** (`--rev <sha>`), so a violation cannot be fixed on disk only and still be pushed. Step 3 tests the gate itself and takes about a minute, so the hook leaves it to `bun run gate` and CI, which run all five steps on every pull request and push to main.
 
 `git push --no-verify` skips the hook. CI is the backstop.
 
