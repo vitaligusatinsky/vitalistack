@@ -72,7 +72,7 @@ A finding is exempt when a real comment carries `vs-allow <rule-id>: <reason>`:
 
 The reason needs at least 10 characters and a word of 3 or more letters. A bare `vs-allow`, a short reason or `..........` exempts nothing. Only comment tokens count: a string that contains `// vs-allow ...` does nothing, and neither does `// vs-allow` in a CSS file (CSS has `/* */` comments only). In markdown use `<!-- vs-allow ... -->`.
 
-Every run prints each exemption it used as `file:line rule-id "reason"`. The count is of comments, not findings.
+Every run of the rules and of the ratchet prints each exemption it used as `file:line rule-id "reason"`, and says `(exempts N findings)` when one comment covered several on its line. The count is of comments, not findings.
 
 ## The ratchet
 
@@ -80,7 +80,7 @@ Every run prints each exemption it used as `file:line rule-id "reason"`. The cou
 
 It does not report hex fragments and URLs (`href="#abc"`, `to="#faq"`, `id="#x"`, `location.hash`, `/docs#abc`), pixel widths inside `@media`, `@container`, `matchMedia(` or `useMediaQuery(`, or `min-[600px]:` variants.
 
-**What counts as new, exactly.** For each changed file the ratchet compares a multiset of (rule, matched token) with the file at the base. A token the file already had is not new, so editing `p-4` to `p-6` on a line that holds an old `w-[13px]` reports nothing. A second `w-[13px]` in the same file is new. A value moved to another file is new. A renamed file keeps its history. Changing an old value to a different raw value is new.
+**What counts as new, exactly.** For each changed file the ratchet compares a multiset of (rule, matched token) with the file at the base. A token the file already had is not new, so editing `p-4` to `p-6` on a line that holds an old `w-[13px]` reports nothing. A second `w-[13px]` in the same file is new. A value that moves between utilities in one file is not new: replacing `w-[13px]` with `h-[13px]` leaves the multiset unchanged. A file renamed from a path the gate does not read (a test, `gate/`, `scripts/`, `public/`, a root `*.config.*`, `src/styles/tokens.css`) has no baseline and counts as new. A value moved to another file is new. A renamed file keeps its history. Changing an old value to a different raw value is new.
 
 ### How the base is chosen
 
@@ -93,10 +93,10 @@ The first of these that resolves, and the run prints which one:
 
 A `--base` or `GATE_BASE` that does not resolve is an error, not a fallback.
 
-**If none resolves, the ratchet runs a full scan and blocks on every raw value it finds**, and prints `ratchet: no base found, running the full scan (blocking)`. A new project starts with no debt, so this is the safe default. On CI, a merge-base equal to the commit being checked also means nothing to compare, so it takes the same path.
+**If none resolves, or `--full-scan-blocking` / `GATE_FULL_SCAN=1` is given, the ratchet runs a full scan and blocks on every raw value it finds**, and prints `ratchet: no base found, running the full scan (blocking)`. A new project starts with no debt, so this is the safe default. On CI, a merge-base equal to the commit being checked also means nothing to compare, so it takes the same path.
 
-- **The hook** passes the remote's sha as the base. For a new branch it uses the merge-base with the remote's default branch. If the remote sha is not in your clone, or there is no default branch, the full scan runs.
-- **CI** uses the pull request base for pull requests and `github.event.before` for pushes. A first push or force push has no usable base, so it runs the full scan.
+- **The hook** passes the remote's sha as the base. For a new branch it uses the merge-base with the remote's default branch. If the remote sha is not in your clone, there is no default branch, or the base would equal the pushed commit itself, the hook passes `--full-scan-blocking` instead of leaving the ratchet to search for an upstream (which could be the pushed commit and pass without comparing anything). Re-pushing a commit the remote already has therefore scans in full.
+- **CI** uses the pull request base for pull requests and `github.event.before` for pushes. A first push or force push has no usable base, so the workflow sets `GATE_FULL_SCAN=1` and the ratchet runs the full scan.
 
 `--full` also prints the count of all raw values in scope as information. It never blocks. `--rev <sha>` checks that commit instead of the working tree.
 
@@ -133,7 +133,11 @@ These are limits, stated plainly:
 - A pull request can change the gate. `.github/CODEOWNERS` covers `gate/`, `.githooks/`, `.github/`, `scripts/install-hooks.ts`, `package.json` and `.oxlintrc.json`, and CI prints a warning that lists changed files under those paths. **CODEOWNERS only enforces review when branch protection requires code-owner review.** Turn that on.
 - `vs-allow` cannot target line 2 or later of a multi-line `className` string: it exempts the line a finding starts on.
 - The pre-push hook runs the working tree's rules against the pushed commit's files. If you changed a rule locally and did not commit it, the hook uses the local rule.
-- The ratchet's `raw-style-number` rule also sees objects that are not styles (`{ top: 5 }`).
+- The ratchet's `raw-style-number` rule also sees objects that are not styles (`{ top: 5 }`). Unitless properties (`lineHeight`, `opacity`, `flex`, `zIndex`, `fontWeight`) are not read.
+- Instructional text that names a class is read as a class: `const help = "Use bg-blue-500 and animate-bounce"` fires `no-raw-palette` and `no-bounce-motion`. Put `vs-allow` above it, or move the text into markdown.
+- Deliberate obfuscation is not decoded: `"bg\u002dblue-500"` evaluates to `bg-blue-500` in JavaScript and passes. The rules target what agents write, not an adversary.
+- A full border set next to a side border (`border-l-4 border-4`) is read as a box, not a bar, and passes.
+- A spring with explicit `stiffness`, `damping` or `mass` is judged by its damping ratio even when `bounce: 0` is also set. The motion library ignores `duration` and `bounce` when any of those three keys is present (its spring generator checks the physics keys first). That library is not installed in this repository, so the precedence is cited from its source, not run here.
 - Emoji detection uses `\p{Extended_Pictographic}` minus `©`, `®`, `™` and the arrow block.
 - Markdown indented code blocks and front matter are scanned like prose.
 - `ease: SOME_CONST` is followed only for a four-number array declared in the same file.

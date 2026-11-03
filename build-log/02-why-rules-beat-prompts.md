@@ -86,7 +86,7 @@ Each rule has a `bad` fixture and a `good` fixture. In the bad one, every line t
 
 Then a mutation test: paste one bad line per rule into the real app's home page and confirm the gate fails and names that rule. All seven did, and so did the ratchet with a new hex colour.
 
-The suite is 171 tests. `bun run gate:prove` prints every rule firing on its fixture, for anyone who wants to see it without reading the tests.
+The suite is 193 tests. `bun run gate:prove` prints every rule firing on its fixture, for anyone who wants to see it without reading the tests.
 
 ## What broke
 
