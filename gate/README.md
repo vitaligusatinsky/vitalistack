@@ -137,7 +137,7 @@ These are limits, stated plainly:
 - Instructional text that names a class is read as a class: `const help = "Use bg-blue-500 and animate-bounce"` fires `no-raw-palette` and `no-bounce-motion`. Put `vs-allow` above it, or move the text into markdown.
 - Deliberate obfuscation is not decoded: `"bg\u002dblue-500"` evaluates to `bg-blue-500` in JavaScript and passes. The rules target what agents write, not an adversary.
 - A full border set next to a side border (`border-l-4 border-4`) is read as a box, not a bar, and passes.
-- A spring with explicit `stiffness`, `damping` or `mass` is judged by its damping ratio even when `bounce: 0` is also set. The motion library ignores `duration` and `bounce` when any of those three keys is present (its spring generator checks the physics keys first). That library is not installed in this repository, so the precedence is cited from its source, not run here.
+- A spring with explicit `stiffness`, `damping` or `mass` is judged by its damping ratio even when `bounce: 0` is also set. The motion library ignores `duration` and `bounce` when any of those three keys is present: `getSpringOptions` in motion-dom 14.9.0 (`dist/es/animation/generators/spring.mjs`) sets `isTimeDefined` only when stiffness, damping and mass are all unset, with the comment "stiffness/damping/mass overrides duration/bounce". Checked against the published package on 2026-11-03.
 - Emoji detection uses `\p{Extended_Pictographic}` minus `©`, `®`, `™` and the arrow block.
 - Markdown indented code blocks and front matter are scanned like prose.
 - `ease: SOME_CONST` is followed only for a four-number array declared in the same file.
