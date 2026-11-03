@@ -12,6 +12,9 @@ export function Bad() {
         <TrashIcon />
       </button>
       <img src="/a.png" className="rounded-control"></img> {/* @expect require-accessible-name */}
+      <button onClick={f}>{open ? <XIcon /> : <MenuIcon />}</button> {/* @expect require-accessible-name */}
+      <button onClick={f}>{cond && <Icon />}</button> {/* @expect require-accessible-name */}
+      <a href="/x">{cond ? <Icon /> : null}</a> {/* @expect require-accessible-name */}
       {/* vs-allow require-accessible-name: the label is supplied by a wrapping tooltip, reviewed */}
       <button><MenuIcon /></button>
       {/* vs-allow require-accessible-name */}

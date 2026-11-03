@@ -52,8 +52,12 @@ export function resolveBase(
     return { sha: verify(root, baseArg), source: `--base=${baseArg}` };
   }
   const fromEnv = env.GATE_BASE?.trim();
-  if (fromEnv && !ZERO.test(fromEnv)) return { sha: verify(root, fromEnv), source: `GATE_BASE=${fromEnv.slice(0, 12)}` };
   const head = verify(root, rev);
+  if (fromEnv && !ZERO.test(fromEnv)) {
+    const sha = verify(root, fromEnv);
+    if (sha === head && env.CI) return null; // nothing left to compare on CI
+    return { sha, source: `GATE_BASE=${fromEnv.slice(0, 12)}` };
+  }
   const upstream = tryGit(root, ["merge-base", rev, "@{upstream}"]);
   const origin = upstream ? null : tryGit(root, ["merge-base", rev, "origin/main"]);
   const sha = upstream ?? origin;

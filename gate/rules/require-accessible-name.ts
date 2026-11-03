@@ -15,6 +15,37 @@ function attrs(el: ts.JsxOpeningLikeElement): { names: Set<string>; spread: bool
   return { names, spread };
 }
 
+function unwrap(e: ts.Expression): ts.Expression {
+  while (ts.isParenthesizedExpression(e)) e = e.expression;
+  return e;
+}
+
+function isIcon(node: ts.Node, sf: ts.SourceFile): boolean {
+  if (!ts.isJsxSelfClosingElement(node)) return false;
+  if (!/^[A-Z]/.test(node.tagName.getText(sf))) return false;
+  const a = attrs(node);
+  return !a.spread && ![...a.names].some((n) => NAMING_ATTRS.has(n));
+}
+
+/**
+ * An expression that can only render an icon or nothing: <Icon />, a conditional whose
+ * branches are all icons or empty, or `cond && <Icon />`. Returns the icons found, or -1
+ * when anything else (text, a variable, another element) can appear.
+ */
+function iconsIn(raw: ts.Expression, sf: ts.SourceFile): number {
+  const e = unwrap(raw);
+  if (isIcon(e, sf)) return 1;
+  if (e.kind === ts.SyntaxKind.NullKeyword || e.kind === ts.SyntaxKind.FalseKeyword) return 0;
+  if (ts.isIdentifier(e) && e.text === "undefined") return 0;
+  if (ts.isConditionalExpression(e)) {
+    const a = iconsIn(e.whenTrue, sf);
+    const b = iconsIn(e.whenFalse, sf);
+    return a < 0 || b < 0 ? -1 : a + b;
+  }
+  if (ts.isBinaryExpression(e) && e.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken) return iconsIn(e.right, sf);
+  return -1;
+}
+
 /** Children that are only PascalCase self-closing components (icons), with no text or expressions. */
 function iconOnly(el: ts.JsxElement, sf: ts.SourceFile): boolean {
   let icons = 0;
@@ -27,6 +58,10 @@ function iconOnly(el: ts.JsxElement, sf: ts.SourceFile): boolean {
       const a = attrs(child);
       if (a.spread || [...a.names].some((n) => NAMING_ATTRS.has(n))) return false;
       icons++;
+    } else if (ts.isJsxExpression(child) && child.expression) {
+      const n = iconsIn(child.expression, sf);
+      if (n < 0) return false;
+      icons += n;
     } else return false;
   }
   return icons > 0;

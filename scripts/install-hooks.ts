@@ -18,7 +18,7 @@ if (here !== root) {
   console.log(`install-hooks: ${here} is inside the repository at ${root}, hooks not installed`);
   process.exit(0);
 }
-const existing = git(["config", "--get", "core.hooksPath"]).stdout.trim();
+const existing = git(["config", "--local", "--get", "core.hooksPath"]).stdout.trim();
 if (existing === ".githooks") {
   console.log("install-hooks: already installed, git runs .githooks/pre-push (the gate)");
   process.exit(0);

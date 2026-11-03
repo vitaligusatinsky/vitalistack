@@ -275,3 +275,16 @@ describe("C26 copy detail", () => {
     expect(ids("export const A = () => <p>2—3</p>")).toEqual(["no-slop-copy@1"]);
   });
 });
+
+describe("round 3", () => {
+  test("R3-1 a nested *.config.* file is scanned, a root one is not", async () => {
+    const { shouldIgnore } = await import("./scan");
+    expect(shouldIgnore("vite.config.ts")).toBe(true);
+    expect(shouldIgnore("tailwind.config.js")).toBe(true);
+    expect(shouldIgnore("src/theme.config.ts")).toBe(false);
+    expect(shouldIgnore("src/components/Hero.config.tsx")).toBe(false);
+    const r = ids('export default { hero: "bg-gradient-to-r from-purple-500 to-pink-500" };', "src/theme.config.ts");
+    expect(r.join()).toContain("no-default-ai-gradient@1");
+    expect(ids("export const H = () => <h1>Unlock the potential \u2014 now</h1>;", "src/components/Hero.config.tsx").join()).toContain("no-slop-copy@1");
+  });
+});

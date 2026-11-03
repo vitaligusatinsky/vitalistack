@@ -56,6 +56,14 @@ export const MD_EXT = [".md", ".mdx"];
 export const DEFAULT_EXT = [...CODE_EXT, ...CSS_EXT];
 export const ALL_EXT = [...DEFAULT_EXT, ...MD_EXT];
 
+/**
+ * The package directory the gate checks: the parent of gate/, wherever the command
+ * is run from. GATE_ROOT overrides it (the tests point it at throwaway repositories).
+ */
+export function packageRoot(): string {
+  return process.env.GATE_ROOT || join(import.meta.dir, "..");
+}
+
 export function extOf(path: string): string {
   const dot = path.lastIndexOf(".");
   return dot >= 0 ? path.slice(dot) : "";
@@ -82,7 +90,7 @@ export function shouldIgnore(path: string): boolean {
   if (p === TOKENS_FILE) return true;
   if (base === "routeTree.gen.ts") return true;
   if (/\.(?:test|spec)\./.test(base)) return true;
-  if (/\.config\.[^/]+$/.test(base)) return true;
+  if (segs.length === 1 && /\.config\.[^/]+$/.test(base)) return true; // tool config at the package root only
   if (base.startsWith("CHANGELOG")) return true;
   const top = segs[0]!;
   if (segs.length > 1 && ["scripts", ".github", "public"].includes(top)) return true;

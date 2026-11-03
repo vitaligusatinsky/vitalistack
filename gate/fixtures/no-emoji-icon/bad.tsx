@@ -3,6 +3,11 @@ export function Bad() {
     { icon: "⚡", title: "Fast" }, // @expect no-emoji-icon
     { icon: "🔒", title: "Secure" }, // @expect no-emoji-icon
   ];
+  const nav = [{ label: "🏠 Home", href: "/" }]; // @expect no-emoji-icon
+  const tabs = [{ title: "📊 Stats" }]; // @expect no-emoji-icon
+  const card = { emoji: "🧪", name: "Lab" }; // @expect no-emoji-icon
+  toast("🎉 Saved"); // @expect no-emoji-icon
+  toast.success("✅ Done"); // @expect no-emoji-icon
   return (
     <div>
       <ul>
@@ -25,6 +30,12 @@ export function Bad() {
         {/* vs-allow no-emoji-icon */}
         <li>👎 Disliked</li> {/* @expect no-emoji-icon */}
       </ul>
+      <div className="text-4xl">🚀</div> {/* @expect no-emoji-icon */}
+      <span>✨ 🎉</span> {/* @expect no-emoji-icon */}
+      <button>{"🚀 Launch"}</button> {/* @expect no-emoji-icon */}
+      <button>{open ? "🔽 Less" : "More"}</button> {/* @expect no-emoji-icon */}
+      <h5>🎯 Goals</h5> {/* @expect no-emoji-icon */}
+      <h6>📌 Pinned</h6> {/* @expect no-emoji-icon */}
       {features.length}
     </div>
   )

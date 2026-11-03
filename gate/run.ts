@@ -2,7 +2,7 @@
 // Runs every hard rule over the files in scope. Exits 1 on any finding.
 //   bun gate/run.ts [--rev <sha>]
 // With --rev it checks the files of that commit instead of the working tree.
-import { checkFile, listFiles, loadRules, readAt, type Exemption } from "./scan";
+import { checkFile, listFiles, loadRules, packageRoot, readAt, type Exemption } from "./scan";
 
 const argv = process.argv.slice(2);
 const revIndex = argv.indexOf("--rev");
@@ -12,7 +12,7 @@ if ((revIndex >= 0 || argv.some((a) => a.startsWith("--rev="))) && !rev) {
   process.exit(2);
 }
 
-const root = process.cwd();
+const root = packageRoot();
 const rules = await loadRules();
 const byId = new Map(rules.map((r) => [r.id, r]));
 const files = listFiles(root, rev);

@@ -19,7 +19,7 @@ jobs:
       - name: Warn when the gate itself changed
         if: github.event_name == 'pull_request'
         run: |
-          changed=$(git diff --name-only "$PR_BASE" HEAD -- gate .githooks | tr '\n' ' ')
+          changed=$(git diff --name-only "$PR_BASE" HEAD -- gate .githooks package.json .oxlintrc.json | tr '\n' ' ')
           if [ -n "$changed" ]; then
             echo "::warning title=This pull request changes the gate::$changed"
           fi

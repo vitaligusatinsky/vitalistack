@@ -11,7 +11,7 @@
     "cf-typegen": "wrangler types",
     "typecheck": "tsc --noEmit",
     "lint": "oxlint",
-    "gate": "bun run typecheck && bun run lint && bun test gate && bun gate/run.ts && bun gate/ratchet.ts",
+    "gate": "bun run typecheck && bun run lint && bun test --timeout 30000 gate && bun gate/run.ts && bun gate/ratchet.ts",
     "gate:prove": "bun gate/prove.ts",
     "prepare": "bun scripts/install-hooks.ts"
   },

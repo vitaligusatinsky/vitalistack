@@ -27,7 +27,7 @@ const commit = (): string => {
   return git("rev-parse", "HEAD");
 };
 const script = (name: string, args: string[] = [], input?: string) =>
-  spawnSync(bun, [join(gate, name), ...args], { cwd: repo, encoding: "utf8", input, env: { ...process.env, CI: "", GATE_BASE: "" } });
+  spawnSync(bun, [join(gate, name), ...args], { cwd: repo, encoding: "utf8", input, env: { ...process.env, CI: "", GATE_BASE: "", GATE_ROOT: repo } });
 
 beforeEach(() => {
   repo = mkdtempSync(join(tmpdir(), "gate-engine-"));
@@ -155,6 +155,40 @@ describe("B4 the pre-push hook checks what is pushed", () => {
     const text = readFileSync(hook, "utf8");
     expect(text).toContain("gate/pre-push.ts");
     expect(text).toContain("input=$(cat)");
+  });
+});
+
+describe("round 3", () => {
+  test("R3-6 CODEOWNERS and the CI warning watch package.json and .oxlintrc.json", () => {
+    const owners = readFileSync(join(gate, "..", ".github", "CODEOWNERS"), "utf8");
+    const wf = readFileSync(join(gate, "..", ".github", "workflows", "gate.yml"), "utf8");
+    for (const p of ["/package.json", "/.oxlintrc.json", "/gate/", "/.githooks/", "/.github/"]) expect(owners).toContain(p + " @");
+    for (const p of ["package.json", ".oxlintrc.json", "gate", ".githooks"]) expect(wf).toContain(p);
+  });
+  test("R3-nit run.ts and ratchet.ts find the package from their own location, not the cwd", () => {
+    const elsewhere = mkdtempSync(join(tmpdir(), "gate-cwd-"));
+    try {
+      const r = spawnSync(bun, [join(gate, "run.ts")], { cwd: elsewhere, encoding: "utf8", env: { ...process.env, GATE_ROOT: "" } });
+      expect(r.status).toBe(0);
+      expect(r.stdout).toMatch(/gate: 7 rules, \d+ files scanned/);
+    } finally {
+      rmSync(elsewhere, { recursive: true, force: true });
+    }
+  });
+  test("R3-nit a global core.hooksPath does not block installing the local one", () => {
+    const globalCfg = join(repo, "..", `gitconfig-${Date.now()}`);
+    writeFileSync(globalCfg, "[core]\n\thooksPath = /somewhere/global\n");
+    const r = spawnSync(bun, [join(gate, "..", "scripts", "install-hooks.ts")], { cwd: repo, encoding: "utf8", env: { ...process.env, GIT_CONFIG_GLOBAL: globalCfg } });
+    rmSync(globalCfg);
+    expect(r.stdout).toContain("installed");
+    expect(spawnSync("git", ["config", "--local", "--get", "core.hooksPath"], { cwd: repo, encoding: "utf8" }).stdout.trim()).toBe(".githooks");
+  });
+  test("R3-4 the shadcn recipe tokens exist", () => {
+    const css = readFileSync(join(gate, "..", "src", "styles", "tokens.css"), "utf8");
+    for (const t of ["--color-on-accent", "--color-overlay", "--color-danger"]) expect(css).toContain(t);
+    const doc = readFileSync(join(gate, "README.md"), "utf8");
+    expect(doc).toContain("Adding shadcn/ui components");
+    for (const t of ["text-on-accent", "bg-overlay", "ring-3", "top-1/2", "-translate-x-1/2"]) expect(doc).toContain(t);
   });
 });
 

@@ -6,8 +6,9 @@
 // still be pushed. Typecheck, oxlint and the tests run on the working tree in the shell hook.
 import { spawnSync } from "node:child_process";
 import { join } from "node:path";
+import { packageRoot } from "./scan";
 
-const root = process.cwd();
+const root = packageRoot();
 const remote = process.argv[2] || "origin";
 const ZERO = /^0+$/;
 

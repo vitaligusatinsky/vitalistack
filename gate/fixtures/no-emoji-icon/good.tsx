@@ -1,5 +1,9 @@
 export function Good() {
   const rows = [{ icon: "bolt", title: "Fast" }];
+  const note = { label: "Say hi 👋 to us", title: "Welcome" };
+  const msg = { text: "🎉 anywhere else is user text" };
+  toast("Saved 🎉");
+  toast.success("Done");
   return (
     <div>
       <p>Thanks for the help 🎉 see you there</p>
@@ -11,6 +15,9 @@ export function Good() {
       <button type="button">Save</button>
       <img alt="A rocket 🚀 on the pad" src="/a.png" />
       <input placeholder="Say something 😀" />
+      <div className="text-4xl">Rocket</div>
+      <span>1 &amp; 2</span>
+      <button>{"Launch"}</button>
       {rows.length}
     </div>
   )

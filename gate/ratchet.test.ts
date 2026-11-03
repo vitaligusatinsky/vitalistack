@@ -66,6 +66,24 @@ describe("detectors (C8, C10)", () => {
   });
 });
 
+describe("round 3 detectors", () => {
+  test("R3-3 arbitrary values need a class-token bracket: JS arrays and multi-line arrays are not matches", () => {
+    expect(codes("a.tsx", 'export const k = ["0%", "100%"];\n')).toEqual([]);
+    expect(codes("a.tsx", 'export const m = [\n  { title: "x" },\n  { content: "p-4" },\n];\n')).toEqual([]);
+    expect(codes("a.tsx", 'export const a = "w-[13px] bg-[#fff] [&_p]:mt-[2rem]";\n')).toContain("tailwind-arbitrary-visual");
+    expect(tokens("a.tsx", 'export const a = "w-[13px]";\n')).toContain("[13px]");
+  });
+  test("R3-3 a hex in a meta array is a raw colour on its own terms, and nothing else", () => {
+    const src = 'export const m = [\n  { title: "x" },\n  { name: "theme-color", content: "#0b0b0b" },\n];\n';
+    expect(codes("a.tsx", src)).toEqual(["raw-color"]);
+  });
+  test("R3-3 vs-allow exempts a ratchet finding, a bare one does not", () => {
+    const ok = '// vs-allow raw-color: theme-color meta must be a literal colour\nexport const c = "#0b0b0b";\n';
+    expect(codes("a.tsx", ok)).toEqual([]);
+    expect(codes("a.tsx", '// vs-allow raw-color\nexport const c = "#0b0b0b";\n')).toEqual(["raw-color"]);
+  });
+});
+
 describe.each([
   ["package at the repository root", ""],
   ["package in an oss/ subdirectory", "oss"],
@@ -93,7 +111,7 @@ describe.each([
     const clean = { ...process.env } as Record<string, string | undefined>;
     delete clean.GATE_BASE;
     delete clean.CI;
-    return spawnSync(process.execPath, [cli, "--json", ...args], { cwd: pkg, encoding: "utf8", env: { ...clean, ...env } });
+    return spawnSync(process.execPath, [cli, "--json", ...args], { cwd: pkg, encoding: "utf8", env: { ...clean, GATE_ROOT: pkg, ...env } });
   };
   const vs = (r: ReturnType<typeof run>) => JSON.parse(r.stdout);
   const count = (r: ReturnType<typeof run>): number => vs(r).violationCount;
@@ -342,6 +360,23 @@ describe.each([
       expect(r.status).toBe(0);
       expect(r.stderr).toContain(MSG);
     });
+  });
+
+  test("R3-nit GATE_BASE equal to HEAD on CI falls to the full scan", () => {
+    file("src/a.tsx", 'export const a = "#111111";\n');
+    commit();
+    const r = run([], { GATE_BASE: "HEAD", CI: "true" });
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain("no base found");
+    expect(run([], { GATE_BASE: "HEAD" }).status).toBe(0);
+  });
+
+  test("R3-3 editing a title in a multi-line meta array reports nothing new", () => {
+    const a = (t: string) => `export const m = [\n  { title: "${t}" },\n  { content: "#0b0b0b" },\n];\n`;
+    file("src/m.tsx", a("one"));
+    commit();
+    file("src/m.tsx", a("two"));
+    expect(run(HEAD).status).toBe(0);
   });
 
   describe("B4 --rev checks the commit, not the working tree", () => {

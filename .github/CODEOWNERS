@@ -4,3 +4,5 @@
 /.githooks/ @vitaligusatinsky
 /.github/ @vitaligusatinsky
 /scripts/install-hooks.ts @vitaligusatinsky
+/package.json @vitaligusatinsky
+/.oxlintrc.json @vitaligusatinsky

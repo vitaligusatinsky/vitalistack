@@ -9,7 +9,7 @@
 //
 //   bun gate/ratchet.ts [--base=<ref>] [--rev <sha>] [--full] [--json]
 import { changedFiles, newViolations, resolveBase, showAtBase } from "./ratchet-diff";
-import { CODE_EXT, CSS_EXT, analyze, hasScannableExtension, listFiles, readAt, shouldIgnore } from "./scan";
+import { CODE_EXT, CSS_EXT, analyze, applyExemptions, hasScannableExtension, listFiles, packageRoot, readAt, shouldIgnore } from "./scan";
 
 type Rule = { code: string; message: string; pattern: RegExp; suggestion: string };
 export type Violation = {
@@ -79,7 +79,8 @@ export const rules: Rule[] = [
     code: "tailwind-arbitrary-visual",
     message: "Tailwind arbitrary visual value outside the token layer.",
     pattern: new RegExp(
-      `\\[[^\\]]*(?:#[0-9a-fA-F]{3,8}|\\d*\\.?\\d+(?:${LENGTH})|(?:rgba?|hsla?|hwb|oklch|oklab|lab|lch)\\(|color-mix\\()[^\\]]*\\]`,
+      // A bracket inside a class token: it follows `-` or `:` and holds no quote or newline.
+      `(?<=[-:])\\[[^\\]\\n"'\`]*(?:#[0-9a-fA-F]{3,8}|\\d*\\.?\\d+(?:${LENGTH})|(?:rgba?|hsla?|hwb|oklch|oklab|lab|lch)\\(|color-mix\\()[^\\]\\n"'\`]*\\]`,
       "g",
     ),
     suggestion: "Use a design token, or add a semantic token before using this value.",
@@ -133,7 +134,10 @@ export function auditContent(file: string, content: string): Violation[] {
       });
     }
   }
-  return violations;
+  // `vs-allow <code>: <reason>` works here too (for example raw-color on a theme-color meta tag).
+  const checked = applyExemptions(info, violations.map((v) => ({ ruleId: v.code, line: v.line, column: v.column })));
+  const keep = new Set(checked.findings.map((f) => `${f.ruleId}:${f.line}:${f.column}`));
+  return violations.filter((v) => keep.has(`${v.code}:${v.line}:${v.column}`));
 }
 
 const CODE_AND_CSS = [...CODE_EXT, ...CSS_EXT];
@@ -146,7 +150,7 @@ if (import.meta.main) {
   const revIndex = argv.indexOf("--rev");
   const rev = revIndex >= 0 ? argv[revIndex + 1] : argv.find((a) => a.startsWith("--rev="))?.slice(6);
   const json = flags.has("--json");
-  const root = process.cwd();
+  const root = packageRoot();
   const log = (s: string) => (json ? console.error(s) : console.log(s));
 
   try {

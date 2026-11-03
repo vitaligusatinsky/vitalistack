@@ -14,6 +14,10 @@ export function Good() {
       <img alt="Team photo" src="/team.png" />
       <img {...imgProps} />
       <button><TrashIcon>Remove</TrashIcon></button>
+      <button aria-label="Menu">{open ? <XIcon /> : <MenuIcon />}</button>
+      <button>{open ? <XIcon /> : "Menu"}</button>
+      <button>{cond && "Text"}</button>
+      <button>{label}{cond && <Icon />}</button>
     </div>
   )
 }
