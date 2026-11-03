@@ -13,7 +13,7 @@ function Home() {
         keeps agent-written code on the tokens.
       </p>
       <a
-        className="mt-6 inline-block rounded-control bg-accent px-4 py-2 text-surface"
+        className="mt-6 inline-block rounded-control bg-accent px-4 py-2 text-on-accent"
         href="https://github.com/vitaligusatinsky/vitalistack"
       >
         Read the project

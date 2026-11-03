@@ -42,9 +42,9 @@ Markdown is read by `no-slop-copy` only. Code and CSS are read by the other six 
 | `no-side-accent-border` | `border-l-<n>` and `border-s-<n>` of 2px or more (including `border-l-[0.25rem]`); CSS or inline `border-left`, `border-inline-start` and `border-width: 0 0 0 4px` of 2px or more | The coloured left bar on cards and callouts signals generated design. | Right and end borders are allowed on purpose (split panes, sidebars). Bars made with `box-shadow` or `border-image`. |
 | `no-default-ai-gradient` | Purple, violet, indigo, fuchsia, pink or rose gradient stops paired in one variant; any `linear-`, `radial-` or `conic-gradient()` and arbitrary `from-[#..]`/`to-[#..]` stops with two or more colours in the 225 to 335 degree hue band, one of them on the purple side; gradient text (`bg-clip-text` with `text-transparent`, `background-clip: text`) | The default "modern" gradient and gradient headline. | Named colours and `var()` stops in gradients. `oklab`, `lab`, `lch` stops. |
 | `no-bounce-motion` | `animate-bounce`, `animation: bounce`, overshooting `cubic-bezier()` and `ease: [..]` curves (also through a same-file `const`), `ease: "backIn" / "backOut" / "backInOut" / "anticipate"`, `bounce:` above 0, and `type: "spring"` whose damping ratio is below 1 | Bouncy motion reads as playful noise in product UI. | Spring options are read only in files that import `motion`, `framer-motion` or `react-spring`, or inside a `transition` object. react-spring `tension`/`friction` configs and `config.wobbly` are not read. A duration-based spring with no `bounce:` is treated as the library default (0.25, bouncy). |
-| `no-emoji-icon` | An emoji in JSX text, or in `label`, `title`, `aria-label`, `alt`, `placeholder` strings, inside `nav`, `header`, `button`, `a`, `li`, `h1` to `h4` or a component named `*Button`, `*Link`, `*NavItem`, `*Title`, `*Heading`; and any string in an `icon` field or prop | Agents use emoji where an icon belongs. | Emoji in a plain `<p>` is user text and passes. The context is any ancestor, so `<li><p>text 🚀</p></li>` fires. `©`, `®`, `™`, arrows, digits, `#` and `*` do not count. |
+| `no-emoji-icon` | An emoji in JSX text, in a string child (`{"🚀 Launch"}`) or in `label`, `title`, `aria-label`, `alt`, `placeholder` props, inside `nav`, `header`, `button`, `a`, `li`, `h1` to `h6` or a component named `*Button`, `*Link`, `*NavItem`, `*Title`, `*Heading`. Anywhere: an element of any tag holding only emoji (`<div className="text-4xl">🚀</div>`), a string in an `icon` or `emoji` field or prop, a `label` or `title` value that starts with an emoji (`{ label: "🏠 Home" }`), and a `toast(...)` or `toast.<kind>(...)` message that starts with an emoji | Agents use emoji where an icon belongs. | Emoji in a plain `<p>` or in other fields is user text and passes. The context is any ancestor, so `<li><p>text 🚀</p></li>` fires. `©`, `®`, `™`, arrows, digits, `#` and `*` do not count. Other notification libraries, and emoji built from variables, are not read. |
 | `no-slop-copy` | Banned phrases (see `gate/rules/copy-phrases.ts`, a plain array you can edit) and every em dash, in JSX text, string literals and all markdown. Code fences and inline code in markdown are skipped | Agents fill copy with stock phrases and em dashes. | Phrases match as whole words, so `seamless` is blocked and `seamlessly` is not. Add both if you want both. Copy built from variables. |
-| `require-accessible-name` | `<button>`, `<a>`, `<Button>`, `<IconButton>`, `<Link>` whose children are only self-closing PascalCase components (icons) with no `aria-label`, `aria-labelledby` or `title`; `<img>` without `alt` | Icon-only controls and images that a screen reader announces as nothing. | Elements with a spread (`{...props}`) are skipped. Icons wrapped in other elements. |
+| `require-accessible-name` | `<button>`, `<a>`, `<Button>`, `<IconButton>`, `<Link>` whose children are only self-closing PascalCase components (icons), including `{open ? <X /> : <Menu />}` and `{cond && <Icon />}`, with no `aria-label`, `aria-labelledby` or `title`; `<img>` without `alt` | Icon-only controls and images that a screen reader announces as nothing. | Elements with a spread (`{...props}`) are skipped. Icons wrapped in other elements. `<Link to="/"><Logo /></Link>` fires even if `Logo` renders text; add an `aria-label`. |
 
 ### Who covers what in `require-accessible-name`
 
@@ -76,7 +76,7 @@ Every run prints each exemption it used as `file:line rule-id "reason"`. The cou
 
 ## The ratchet
 
-`gate/ratchet.ts` blocks **new** raw visual values: colours (hex, `rgb`, `hsl`, `oklch`, `oklab`, `lab`, `lch`, `color-mix`, and named colours where a colour is set), raw pixel values, raw shadows, Tailwind arbitrary values with a unit (`w-[13px]`, `w-[2rem]`, `h-[80vh]`), and numeric React style values (`padding: 12`, `fontSize: 14`; zero is fine). Put raw values in `src/styles/tokens.css`.
+`gate/ratchet.ts` blocks **new** raw visual values: colours (hex, `rgb`, `hsl`, `oklch`, `oklab`, `lab`, `lch`, `color-mix`, and named colours where a colour is set), raw pixel values, raw shadows, Tailwind arbitrary values with a unit (`w-[13px]`, `w-[2rem]`, `h-[80vh]`), and numeric React style values (`padding: 12`, `fontSize: 14`; zero is fine). Put raw values in `src/styles/tokens.css`. A value that must stay literal (a `theme-color` meta tag cannot read a CSS variable) takes a `vs-allow raw-color: <reason>` comment above it; the ratchet reads the same comments as the rules.
 
 It does not report hex fragments and URLs (`href="#abc"`, `to="#faq"`, `id="#x"`, `location.hash`, `/docs#abc`), pixel widths inside `@media`, `@container`, `matchMedia(` or `useMediaQuery(`, or `min-[600px]:` variants.
 
@@ -102,9 +102,26 @@ A `--base` or `GATE_BASE` that does not resolve is an error, not a fallback.
 
 The git commands run from the package directory, so the same code works when this project is the repository root and when it sits in a subdirectory of a larger repository. Both layouts are tested.
 
+## Adding shadcn/ui components
+
+Vendored components stay fully gated. Copying a component in means adapting it to your tokens, which is what owning your stack means. A typical v4 component triggers these:
+
+| Finding in the copied code | Use instead |
+|---|---|
+| `text-white` (no-raw-palette) | `text-on-accent` |
+| `bg-black/50` on an overlay | `bg-overlay` |
+| `bg-red-600` on a destructive button | `bg-danger text-on-accent` |
+| `ring-[3px]` (ratchet) | `ring-3` |
+| `rounded-[4px]` | `rounded-sm`, or `rounded-control` |
+| `h-[1.15rem]`, `w-[1.15rem]` | `h-4 w-4` |
+| `min-w-[8rem]` | `min-w-32` |
+| `top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%]` | `top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2` |
+
+`--color-on-accent`, `--color-danger` and `--color-overlay` are defined in `src/styles/tokens.css` for this. Add a token there when none fits, rather than a `vs-allow`.
+
 ## Parsing
 
-Code files are tokenised with the TypeScript parser, so comments are found exactly: a regex literal holding a quote, `//` in JSX text, `return"..."` and multi-line `className` strings are all handled. CSS has its own small masker that knows strings and `url(...)`. Markdown masks fenced code, inline code and HTML comments.
+Code files are tokenised with the TypeScript parser, so comments are found exactly: a regex literal holding a quote, `//` in JSX text, `return"..."` and multi-line `className` strings are all handled. CSS has its own small masker that knows strings and `url(...)`. `no-slop-copy` skips strings that are code, not copy: import, export, `require` and `import()` specifiers, and the `className`, `class`, `data-*`, `key`, `id`, `href`, `to`, `src` and `htmlFor` attributes. Markdown masks fenced code, inline code and HTML comments.
 
 ## Known misses
 
@@ -113,7 +130,9 @@ These are limits, stated plainly:
 - The rules read source text, not a rendered page. A class built at runtime (`"bg-" + colour`) is invisible.
 - Files outside the scan (see Scope) are not checked. `public/` assets and `scripts/` can hold anything.
 - The hook checks the tip of each pushed ref. Earlier commits in the push are not checked one by one.
-- A pull request can change the gate. `.github/CODEOWNERS` makes that a reviewed change, and CI prints a warning that lists changed files under `gate/` and `.githooks/`.
+- A pull request can change the gate. `.github/CODEOWNERS` covers `gate/`, `.githooks/`, `.github/`, `scripts/install-hooks.ts`, `package.json` and `.oxlintrc.json`, and CI prints a warning that lists changed files under those paths. **CODEOWNERS only enforces review when branch protection requires code-owner review.** Turn that on.
+- `vs-allow` cannot target line 2 or later of a multi-line `className` string: it exempts the line a finding starts on.
+- The pre-push hook runs the working tree's rules against the pushed commit's files. If you changed a rule locally and did not commit it, the hook uses the local rule.
 - The ratchet's `raw-style-number` rule also sees objects that are not styles (`{ top: 5 }`).
 - Emoji detection uses `\p{Extended_Pictographic}` minus `©`, `®`, `™` and the arrow block.
 - Markdown indented code blocks and front matter are scanned like prose.
