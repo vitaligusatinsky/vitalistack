@@ -24,3 +24,4 @@ Newest at the bottom. Each one records what was decided and why.
 | 2026-11-03 | The pre-push hook checks the pushed commits (`--rev`), not the working tree | Fixing a violation on disk must not let the committed one through. |
 | 2026-11-03 | `.github/CODEOWNERS` covers the gate, the hooks and CI | A pull request can change the gate that checks it, so that change needs a reviewer. |
 | 2026-11-03 | Code is masked with the TypeScript parser, not a hand-written scanner | Regex literals, JSX text and glued keywords broke the hand-written masker in ways that hid violations. |
+| 2026-11-12 | Recommend the third-party Founder Pack in `docs/founder-pack.md`, pinned to a commit, not vendored | Testing the business comes before building the app; linking keeps someone else's code out of the template and its licence. |

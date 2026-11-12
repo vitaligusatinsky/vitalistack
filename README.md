@@ -23,6 +23,7 @@ src/            the app: routes, and styles/tokens.css (the only place raw colou
 gate/           the gate: slop rules, fixtures that prove them, and the ratchet
 scripts/        repository tooling
 build-log/      how it's being built, in order
+docs/           decisions, and founder-pack.md (a third-party skill pack for testing the business before you build)
 .githooks/      pre-push runs the gate
 ```
 
