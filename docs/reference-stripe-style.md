@@ -1,6 +1,6 @@
 # Reference: the Stripe style, as read by Windframe
 
-A place to learn from, not a theme to copy. [Windframe's "Stripe style"
+A place to learn from, not a theme to copy. For Windframe as a whole product (presets, MCP, what our gate found on its site), see [reference-windframe.md](reference-windframe.md). [Windframe's "Stripe style"
 page](https://windframe.dev/styles/stripe) (read 2026-11-12) describes the design
 language behind Stripe's marketing and product pages. Windframe wrote it to steer its
 AI generator; it is not published or endorsed by Stripe.
